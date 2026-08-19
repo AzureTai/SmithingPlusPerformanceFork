@@ -64,11 +64,21 @@ public class ToolMoldUnitsPatch
 
     private static int? VoxelCountForStack(ICoreAPI api, ItemStack stack)
     {
-        var cheapestRecipe = stack.GetCheapestSmithingRecipe(api);
-        if (cheapestRecipe == null) return null;
-        var cheapestOutput = cheapestRecipe.Output.ResolvedItemstack.StackSize;
-        var recipeMaterialVoxels = cheapestRecipe.Voxels.VoxelCount();
-        var voxelsPerItem = Math.Max(recipeMaterialVoxels / cheapestOutput, 0);
+        SmithingRecipe? cheapestRecipe = stack.GetCheapestSmithingRecipe(api);
+        if (cheapestRecipe == null)
+        {
+            return null;
+        }
+
+        JsonItemStack? recipeOutput = cheapestRecipe.Output;
+        ItemStack? resolvedOutputStack = recipeOutput?.ResolvedItemstack;
+        if (resolvedOutputStack == null || resolvedOutputStack.StackSize <= 0)
+        {
+            return null;
+        }
+
+        int recipeMaterialVoxels = cheapestRecipe.Voxels.VoxelCount();
+        int voxelsPerItem = Math.Max(recipeMaterialVoxels / resolvedOutputStack.StackSize, 0);
         return voxelsPerItem * stack.StackSize;
     }
 

@@ -29,11 +29,17 @@ public static class CollectibleExtensions
 
     public static void MakeForgeable(this CollectibleObject collObj)
     {
-        collObj.EnsureAttributesNotNull();
-        var token = collObj.Attributes.Token;
+        JsonObject? attributes = collObj.Attributes;
+        if (attributes == null)
+        {
+            attributes = new JsonObject(new JObject());
+            collObj.Attributes = attributes;
+        }
+
+        JToken token = attributes.Token;
         token["forgable"] = true;
         token["inForgeTransform"] = ForgeTransformToken;
-        collObj.Attributes.Token = token;
+        attributes.Token = token;
     }
 
     public static void AddBehavior<T>(this CollectibleObject collectible) where T : CollectibleBehavior

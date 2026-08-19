@@ -86,15 +86,66 @@ public abstract class CollectibleBehaviorAnvilWorkable(CollectibleObject collObj
 
     public virtual List<SmithingRecipe> GetMatchingRecipes(ItemStack stack)
     {
-        return Api.GetSmithingRecipes()
-            .Where(r =>
-                ((MetalMaterial?.IngotStack is { } baseMetal && r.Ingredient.SatisfiesAsIngredient(baseMetal))
-                 || r.Ingredient.SatisfiesAsIngredient(stack))
-                && !r.Output.ResolvedItemstack.Collectible.Code.Equals(collObj.Code))
-            .OrderBy(r => r.Output.ResolvedItemstack.Collectible.Code)
-            .ThenBy(r => r.Output.ResolvedItemstack.StackSize)
-            .DistinctBy(r => r.Output.ResolvedItemstack)
-            .ToList();
+        ICoreAPI? api = Api;
+        if (api == null)
+        {
+            return new List<SmithingRecipe>();
+        }
+
+        ItemStack? baseMetalStack = MetalMaterial?.IngotStack;
+        List<SmithingRecipe> matchingRecipes = new List<SmithingRecipe>();
+        IEnumerable<SmithingRecipe> smithingRecipes = api.GetSmithingRecipes();
+        foreach (SmithingRecipe? recipe in smithingRecipes)
+        {
+            CraftingRecipeIngredient? ingredient = recipe?.Ingredient;
+            ItemStack? resolvedOutputStack = recipe?.Output?.ResolvedItemstack;
+            AssetLocation? outputCode = resolvedOutputStack?.Collectible?.Code;
+            if (ingredient == null || resolvedOutputStack == null || outputCode == null)
+            {
+                continue;
+            }
+
+            bool matchesBaseMetal = baseMetalStack != null && ingredient.SatisfiesAsIngredient(baseMetalStack);
+            bool matchesInputStack = ingredient.SatisfiesAsIngredient(stack);
+            if ((!matchesBaseMetal && !matchesInputStack) || outputCode.Equals(collObj.Code))
+            {
+                continue;
+            }
+
+            matchingRecipes.Add(recipe);
+        }
+
+        matchingRecipes.Sort(CompareMatchingRecipes);
+
+        List<SmithingRecipe> distinctRecipes = new List<SmithingRecipe>(matchingRecipes.Count);
+        HashSet<ItemStack> encounteredOutputs = new HashSet<ItemStack>();
+        foreach (SmithingRecipe recipe in matchingRecipes)
+        {
+            ItemStack? resolvedOutputStack = recipe.Output?.ResolvedItemstack;
+            if (resolvedOutputStack != null && encounteredOutputs.Add(resolvedOutputStack))
+            {
+                distinctRecipes.Add(recipe);
+            }
+        }
+
+        return distinctRecipes;
+    }
+
+    private static int CompareMatchingRecipes(SmithingRecipe leftRecipe, SmithingRecipe rightRecipe)
+    {
+        ItemStack? leftOutputStack = leftRecipe.Output?.ResolvedItemstack;
+        ItemStack? rightOutputStack = rightRecipe.Output?.ResolvedItemstack;
+        string leftCode = leftOutputStack?.Collectible?.Code?.ToString() ?? string.Empty;
+        string rightCode = rightOutputStack?.Collectible?.Code?.ToString() ?? string.Empty;
+        int codeComparison = string.CompareOrdinal(leftCode, rightCode);
+        if (codeComparison != 0)
+        {
+            return codeComparison;
+        }
+
+        int leftStackSize = leftOutputStack?.StackSize ?? 0;
+        int rightStackSize = rightOutputStack?.StackSize ?? 0;
+        return leftStackSize.CompareTo(rightStackSize);
     }
 
     public virtual ItemStack? GetBaseMaterial(ItemStack stack)

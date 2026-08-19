@@ -93,13 +93,17 @@ public class CollectibleBehaviorCastToolHead(CollectibleObject collObj) : Collec
     public override void GetHeldItemInfo(ItemSlot inSlot, StringBuilder dsc, IWorldAccessor world, bool withDebugInfo)
     {
         base.GetHeldItemInfo(inSlot, dsc, world, withDebugInfo);
-        if (!inSlot.Itemstack.IsCastTool())
+        ItemStack? itemStack = inSlot.Itemstack;
+        if (itemStack == null || !itemStack.IsCastTool())
+        {
             return;
+        }
+
         dsc.AppendLine(Lang.Get($"{Core.ModId}:setting-casttooldurabilitypenalty") +
                        $": {100 * Core.Config.CastToolDurabilityPenalty}%");
         dsc.AppendLine(Lang.Get($"{Core.ModId}:itemdesc-needsrefining"));
-        var workableTemp = GetWorkableTemperature(inSlot.Itemstack);
-        var temperature = inSlot.Itemstack?.Collectible.GetTemperature(world, inSlot.Itemstack);
+        var workableTemp = GetWorkableTemperature(itemStack);
+        var temperature = itemStack.Collectible.GetTemperature(world, itemStack);
         dsc.AppendLine(Lang.Get("Workable Temperature: {0}",
             workableTemp > 0
                 ? temperature > workableTemp

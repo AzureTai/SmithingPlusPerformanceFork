@@ -11,10 +11,10 @@ namespace SmithingPlus.Metal;
 public class MetalMaterial : IEquatable<MetalMaterial>
 {
     // These json properties might be null, fallback uses classic vanilla naming conventions
-    [JsonProperty("ingot")] private AssetLocation? _ingotCode;
-    [JsonProperty("metalbit")] private AssetLocation? _metalBitCode;
-    [JsonProperty("tier")] private int? _tier;
-    [JsonProperty("workitem")] private AssetLocation? _workItemCode;
+    [JsonProperty("ingot")] private AssetLocation? _ingotCode = null;
+    [JsonProperty("metalbit")] private AssetLocation? _metalBitCode = null;
+    [JsonProperty("tier")] private int? _tier = null;
+    [JsonProperty("workitem")] private AssetLocation? _workItemCode = null;
     [JsonProperty("code")] public required AssetLocation Code { get; init; }
     public bool Resolved { get; private set; }
     public string Variant => Code.Path;

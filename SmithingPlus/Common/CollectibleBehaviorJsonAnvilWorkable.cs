@@ -1,6 +1,5 @@
 #nullable enable
 using System;
-using System.Linq;
 using JetBrains.Annotations;
 using SmithingPlus.Util;
 using Vintagestory.API.Common;
@@ -33,13 +32,45 @@ public sealed class CollectibleBehaviorJsonAnvilWorkable(CollectibleObject collO
             ? Enum.Parse<EnumHelveWorkableMode>(
                 properties[PropertyKeys.HelveWorkableMode].AsString(nameof(EnumHelveWorkableMode.NotWorkable)))
             : EnumHelveWorkableMode.NotWorkable;
-        var jsonPattern = properties[PropertyKeys.Voxels].Exists ? properties[PropertyKeys.Voxels].AsArray() : null;
-        if (jsonPattern is not { Length: > 0 }) return;
-        var jsonArray = jsonPattern.Select(s => s.AsArray()).ToArray();
-        Pattern = jsonArray
-            .Select(s =>
-                s.Select(t => t.AsString()).ToArray()
-            ).ToArray();
+        JsonObject[]? jsonPattern = properties[PropertyKeys.Voxels].Exists
+            ? properties[PropertyKeys.Voxels].AsArray()
+            : null;
+        if (jsonPattern == null || jsonPattern.Length == 0)
+        {
+            return;
+        }
+
+        string[][] parsedPattern = new string[jsonPattern.Length][];
+        for (int layerIndex = 0; layerIndex < jsonPattern.Length; layerIndex++)
+        {
+            JsonObject[]? jsonLayer = jsonPattern[layerIndex]?.AsArray();
+            if (jsonLayer == null)
+            {
+                Core.Logger.Error(
+                    "CollectibleBehaviorJsonAnvilWorkable contains an invalid voxel-pattern layer for {0}.",
+                    collObj.Code);
+                return;
+            }
+
+            string[] parsedLayer = new string[jsonLayer.Length];
+            for (int rowIndex = 0; rowIndex < jsonLayer.Length; rowIndex++)
+            {
+                string? parsedRow = jsonLayer[rowIndex]?.AsString();
+                if (parsedRow == null)
+                {
+                    Core.Logger.Error(
+                        "CollectibleBehaviorJsonAnvilWorkable contains an invalid voxel-pattern row for {0}.",
+                        collObj.Code);
+                    return;
+                }
+
+                parsedLayer[rowIndex] = parsedRow;
+            }
+
+            parsedPattern[layerIndex] = parsedLayer;
+        }
+
+        Pattern = parsedPattern;
     }
 
     public override EnumHelveWorkableMode GetHelveWorkableMode(ItemStack stack, BlockEntityAnvil beAnvil)

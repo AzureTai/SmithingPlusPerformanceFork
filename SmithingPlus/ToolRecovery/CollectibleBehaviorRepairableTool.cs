@@ -20,22 +20,22 @@ public class CollectibleBehaviorRepairableTool : CollectibleBehavior
     {
         base.GetHeldItemInfo(inSlot, dsc, world, withDebugInfo);
 
-        var itemstack = inSlot?.Itemstack;
-        var collectible = itemstack?.Collectible;
+        ItemStack? itemStack = inSlot?.Itemstack;
+        CollectibleObject? collectible = itemStack?.Collectible;
         var code = collectible?.Code;
 
-        if (code == null || inSlot == null)
+        if (code == null || itemStack == null)
         {
-            Core.Logger.Error("Failed to get code for itemstack {0}", itemstack);
+            Core.Logger.Error("Failed to get code for itemstack {0}", itemStack);
             return;
         }
 
         if (!WildcardUtil.Match(Core.Config.RepairableToolSelector, code.ToString()))
             return;
-        var brokenCount = inSlot.Itemstack.GetBrokenCount();
+        var brokenCount = itemStack.GetBrokenCount();
         if (brokenCount <= 0) return;
         if (Core.CConfig.ShowRepairedCount) dsc.AppendLine(Lang.Get($"{LangKey} {{0}} times", brokenCount));
-        if (Core.CConfig.ShowRepairSmithName && inSlot.Itemstack.GetRepairSmith() is { } repairSmith)
+        if (Core.CConfig.ShowRepairSmithName && itemStack.GetRepairSmith() is { } repairSmith)
             dsc.AppendLine(Lang.Get("Last repaired by {0}", repairSmith));
     }
 }
