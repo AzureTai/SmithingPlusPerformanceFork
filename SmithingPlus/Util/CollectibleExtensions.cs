@@ -36,7 +36,12 @@ public static class CollectibleExtensions
             collObj.Attributes = attributes;
         }
 
-        JToken token = attributes.Token;
+        JToken? token = attributes.Token;
+        if (token == null)
+        {
+            token = new JObject();
+        }
+
         token["forgable"] = true;
         token["inForgeTransform"] = ForgeTransformToken;
         attributes.Token = token;

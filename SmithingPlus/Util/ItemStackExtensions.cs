@@ -189,7 +189,12 @@ public static class ItemStackExtensions
         int selectedVoxelCost = int.MinValue;
         foreach (SmithingRecipe? recipe in recipeRegistry.SmithingRecipes)
         {
-            ItemStack? resolvedOutputStack = recipe?.Output?.ResolvedItemstack;
+            if (recipe == null)
+            {
+                continue;
+            }
+
+            ItemStack? resolvedOutputStack = recipe.Output?.ResolvedItemstack;
             if (resolvedOutputStack == null || resolvedOutputStack.StackSize <= 0)
             {
                 continue;

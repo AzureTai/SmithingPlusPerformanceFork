@@ -97,8 +97,13 @@ public abstract class CollectibleBehaviorAnvilWorkable(CollectibleObject collObj
         IEnumerable<SmithingRecipe> smithingRecipes = api.GetSmithingRecipes();
         foreach (SmithingRecipe? recipe in smithingRecipes)
         {
-            CraftingRecipeIngredient? ingredient = recipe?.Ingredient;
-            ItemStack? resolvedOutputStack = recipe?.Output?.ResolvedItemstack;
+            if (recipe == null)
+            {
+                continue;
+            }
+
+            CraftingRecipeIngredient? ingredient = recipe.Ingredient;
+            ItemStack? resolvedOutputStack = recipe.Output?.ResolvedItemstack;
             AssetLocation? outputCode = resolvedOutputStack?.Collectible?.Code;
             if (ingredient == null || resolvedOutputStack == null || outputCode == null)
             {
