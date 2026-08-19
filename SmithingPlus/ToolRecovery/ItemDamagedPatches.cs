@@ -60,9 +60,9 @@ public class ItemDamagedPatches
     [HarmonyPrefix]
     [HarmonyPatch(nameof(CollectibleObject.DamageItem))]
     private static void Prefix_DamageItem(
-        IWorldAccessor world,
-        Entity byEntity,
-        ItemSlot itemSlot,
+        IWorldAccessor? world,
+        Entity? byEntity,
+        ItemSlot? itemSlot,
         int amount = 1,
         bool destroyOnZeroDurability = true)
     {
@@ -75,7 +75,7 @@ public class ItemDamagedPatches
             return;
         if (!destroyOnZeroDurability)
             return;
-        ItemStack? itemStack = itemSlot?.Itemstack;
+        ItemStack? itemStack = itemSlot.Itemstack;
         int? durability = itemStack?.GetRemainingDurability();
         if (!durability.HasValue || durability > amount) return;
         if (itemStack?.Collectible?.HasBehavior<CollectibleBehaviorRepairableTool>() != true) return;
