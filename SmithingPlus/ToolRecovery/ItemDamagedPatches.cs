@@ -66,6 +66,11 @@ public class ItemDamagedPatches
         int amount = 1,
         bool destroyOnZeroDurability = true)
     {
+        if (world == null || byEntity == null || itemSlot == null)
+        {
+            return;
+        }
+
         if (world.Api.Side.IsClient())
             return;
         if (!destroyOnZeroDurability)

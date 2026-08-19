@@ -44,7 +44,7 @@ public class CollectibleBehaviorBrokenToolHead(CollectibleObject collObj) : Coll
             : Lang.Get($"{Core.ModId}:Broken {{0}}", toolName.ToLower()));
     }
 
-    public override void GetHeldItemInfo(ItemSlot inSlot, StringBuilder dsc, IWorldAccessor world, bool withDebugInfo)
+    public override void GetHeldItemInfo(ItemSlot? inSlot, StringBuilder dsc, IWorldAccessor world, bool withDebugInfo)
     {
         ItemStack? itemStack = inSlot?.Itemstack;
         if (itemStack == null || !IsBrokenToolHead(itemStack)) return;
