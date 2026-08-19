@@ -80,16 +80,28 @@ public static class MetalMaterialExtensions
         Func<CollectibleObject, MetalMaterial?> materialResolver, out MetalMaterial? metalMaterial)
     {
         metalMaterial = null;
-        foreach (var gridRecipe in gridRecipes)
+        foreach (GridRecipe gridRecipe in gridRecipes)
         {
-            var ingredients =
-                from ing in gridRecipe.RecipeIngredients
-                where ing is { ResolvedItemStack: not null, ConsumeProperties.Consume: false } || ing.ConsumeProperties.DurabilityCost == 0 &&
-                      ing.ResolvedItemStack?.Collectible != null
-                select ing.ResolvedItemStack?.Collectible;
-            foreach (var ingredient in ingredients)
+            if (gridRecipe == null || gridRecipe.RecipeIngredients == null)
             {
-                if (ingredient == null) continue;
+                continue;
+            }
+
+            foreach (CraftingRecipeIngredient ingredientDefinition in gridRecipe.RecipeIngredients)
+            {
+                if (ingredientDefinition == null || ingredientDefinition.ResolvedItemStack?.Collectible == null)
+                {
+                    continue;
+                }
+
+                if (ingredientDefinition.ConsumeProperties == null ||
+                    (ingredientDefinition.ConsumeProperties.Consume &&
+                     ingredientDefinition.ConsumeProperties.DurabilityCost != 0))
+                {
+                    continue;
+                }
+
+                CollectibleObject ingredient = ingredientDefinition.ResolvedItemStack.Collectible;
                 metalMaterial = materialResolver(ingredient);
                 if (metalMaterial != null) return true;
             }
@@ -120,7 +132,7 @@ public static class MetalMaterialExtensions
         MetalMaterial? metalMaterial = null;
         foreach (var recipe in smithingRecipes)
         {
-            var ingredient = recipe.Output.ResolvedItemstack?.Collectible;
+            var ingredient = recipe?.Output?.ResolvedItemstack?.Collectible;
             if (ingredient == null) continue;
             var variantCode = ingredient.GetMetalVariant();
             metalMaterial = MetalMaterialLoader.GetMaterial(api, variantCode);
@@ -150,7 +162,11 @@ public static class MetalMaterialExtensions
     {
         var collObj = itemStack.Collectible;
         if (collObj is not IAnvilWorkable anvilWorkable) return collObj?.GetOrCacheMetalMaterial(api);
-        var ingotStack = anvilWorkable.GetBaseMaterial(itemStack);
+        ItemStack? ingotStack = anvilWorkable.GetBaseMaterial(itemStack);
+        if (ingotStack?.Collectible == null)
+        {
+            return collObj.GetOrCacheMetalMaterial(api);
+        }
         var metalMaterial = ingotStack.Collectible.GetOrCacheMetalMaterial(api);
         return metalMaterial ?? collObj.GetOrCacheMetalMaterial(api);
     }
@@ -162,7 +178,11 @@ public static class MetalMaterialExtensions
         // Resort to the CollectibleObject method for items that are not anvil workable
         if (collObj is not IAnvilWorkable anvilWorkable) return collObj?.GetOrCacheMetalMaterial(api);
         // Grab from IAnvilWorkable
-        var ingotStack = anvilWorkable.GetBaseMaterial(itemStack);
+        ItemStack? ingotStack = anvilWorkable.GetBaseMaterial(itemStack);
+        if (ingotStack?.Collectible == null)
+        {
+            return collObj.GetMetalMaterialProcessed(api) ?? collObj.GetOrCacheMetalMaterial(api);
+        }
         // Try to grab the processed material from the ingot stack
         return ingotStack.Collectible.GetMetalMaterialProcessed(api);
     }

@@ -57,9 +57,14 @@ public class HelveHammerRecoveryPatches
             return;
         }
 
-        var metalBitStack = metalMaterial.MetalBitStack;
+        ItemStack? metalBitStack = metalMaterial.MetalBitStack;
+        if (metalBitStack == null)
+        {
+            Core.Logger.VerboseDebug("[BitsRecovery] The resolved metal material has no metal bit item.");
+            return;
+        }
         var temperature = workItemStack.Collectible.GetTemperature(api.World, workItemStack);
-        metalBitStack?.Collectible.SetTemperature(api.World, metalBitStack, temperature);
+        metalBitStack.Collectible.SetTemperature(api.World, metalBitStack, temperature);
         __instance.Api.World.SpawnItemEntity(metalBitStack, __instance.Pos);
     }
 }

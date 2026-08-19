@@ -16,22 +16,29 @@ public class SmithingRecipeAttributesPatch
     public static void GetMatchingRecipes_Postfix(IAnvilWorkable __instance, ref List<SmithingRecipe> __result,
         ItemStack stack)
     {
+        if (__instance == null || __result == null)
+        {
+            __result = new List<SmithingRecipe>();
+            return;
+        }
+
         if (__instance is ItemWorkItem) return; // Return for existing work item
         if (__instance is not CollectibleBehaviorWorkableNugget)
             __result = __result.Where(r =>
-                r.Ingredient.RecipeAttributes?[ModRecipeAttributes.NuggetRecipe]?.AsBool() != true
+                r?.Ingredient?.RecipeAttributes?[ModRecipeAttributes.NuggetRecipe]?.AsBool() != true
             ).ToList();
         if (__instance is not CollectibleBehaviorAnvilWorkable)
             __result = __result.Where(r =>
-                r.Ingredient.RecipeAttributes?[ModRecipeAttributes.WorkableRecipe]?.AsBool() != true
+                r?.Ingredient?.RecipeAttributes?[ModRecipeAttributes.WorkableRecipe]?.AsBool() != true
             ).ToList();
-        __result = __result.Where(r => r.Ingredient.RecipeAttributes?[ModRecipeAttributes.RepairOnly]?.AsBool() != true
+        __result = __result.Where(r => r?.Ingredient?.RecipeAttributes?[ModRecipeAttributes.RepairOnly]?.AsBool() != true
         ).ToList();
     }
 
     public static void PatchIfEnabled(bool condition, Harmony harmony)
     {
         if (!condition) return;
+        if (harmony == null) throw new ArgumentNullException(nameof(harmony));
         var interfaceType = typeof(IAnvilWorkable);
 
         // Look through all loaded assemblies and their types
@@ -62,8 +69,14 @@ public class SmithingRecipeAttributesPatch
 
             var target = method.IsVirtual ? method.GetBaseDefinition() : method;
 
-            var postfix =
-                new HarmonyMethod(typeof(SmithingRecipeAttributesPatch).GetMethod(nameof(GetMatchingRecipes_Postfix)));
+            MethodInfo postfixMethod = typeof(SmithingRecipeAttributesPatch).GetMethod(nameof(GetMatchingRecipes_Postfix));
+            if (postfixMethod == null)
+            {
+                throw new MissingMethodException(typeof(SmithingRecipeAttributesPatch).FullName,
+                    nameof(GetMatchingRecipes_Postfix));
+            }
+
+            var postfix = new HarmonyMethod(postfixMethod);
             // Apply Harmony patch to it
             if (seen.Add((target.Module, target.MetadataToken)))
                 harmony.Patch(target, postfix: postfix);

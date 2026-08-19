@@ -90,7 +90,7 @@ public static class CollectibleExtensions
             foreach (var recipe in api.ModLoader.GetModSystem<RecipeRegistrySystem>().SmithingRecipes)
             {
                 var code = recipe?.Output?.ResolvedItemstack?.Collectible?.Code;
-                if (code != null) dict.TryAdd(code, recipe!);
+                if (code != null && recipe != null) dict.TryAdd(code, recipe);
             }
 
             return dict;
@@ -172,6 +172,17 @@ public static class CollectibleExtensions
     public static CollectibleBehaviorQuenchable.MetalPropertyVariant? GetMetalProps(
         this CollectibleBehaviorQuenchable behavior)
     {
-        return behavior?.GetField<CollectibleBehaviorQuenchable.MetalPropertyVariant>("metalProps");
+        if (behavior == null)
+        {
+            return null;
+        }
+
+        CollectibleBehaviorQuenchable.MetalPropertyVariant? metalProperties;
+        if (behavior.TryGetField("metalProps", out metalProperties))
+        {
+            return metalProperties;
+        }
+
+        return null;
     }
 }

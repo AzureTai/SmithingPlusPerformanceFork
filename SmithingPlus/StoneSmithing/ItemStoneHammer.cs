@@ -101,7 +101,7 @@ public class ItemStoneHammer : ItemHammer
     {
         var byteArray = stack.TempAttributes.GetBytes("sp:voxelHitCounts", Array.Empty<byte>());
         var hitCounts = new Dictionary<int, int>();
-        for (var i = 0; i < byteArray.Length; i += 2)
+        for (var i = 0; i + 1 < byteArray.Length; i += 2)
         {
             int selectionBoxIndex = byteArray[i];
             int hitCount = byteArray[i + 1];

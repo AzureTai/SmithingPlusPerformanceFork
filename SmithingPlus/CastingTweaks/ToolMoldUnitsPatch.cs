@@ -89,14 +89,20 @@ public class ToolMoldUnitsPatch
         {
             if (toolMold.Attributes["drop"].Exists)
             {
-                var jStack =
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
-                    toolMold.Attributes["drop"].AsObject<JsonItemStack>(null, toolMold.Code.Domain);
-#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
-                if (jStack == null)
-                    return [];
-                var itemStack = MoldOutputStackFromCode(jStack, api, toolMold, fromMetal);
-                return itemStack == null ? [] : [itemStack];
+                JsonItemStack jStack = toolMold.Attributes["drop"].AsObject<JsonItemStack>(
+                    new JsonItemStack(), toolMold.Code.Domain);
+                if (jStack?.Code == null)
+                {
+                    return Array.Empty<ItemStack>();
+                }
+
+                ItemStack? itemStack = MoldOutputStackFromCode(jStack, api, toolMold, fromMetal);
+                if (itemStack == null)
+                {
+                    return Array.Empty<ItemStack>();
+                }
+
+                return new ItemStack[] { itemStack };
             }
 
             var jsonItemStackArray =
@@ -123,6 +129,11 @@ public class ToolMoldUnitsPatch
     private static ItemStack? MoldOutputStackFromCode(JsonItemStack jstack, ICoreAPI api, Block toolMold,
         ItemStack fromMetal)
     {
+        if (jstack?.Code == null)
+        {
+            return null;
+        }
+
         var newValue = fromMetal.Collectible.LastCodePart();
         jstack.Code.Path = jstack.Code.Path.Replace("{metal}", newValue);
         jstack.Resolve(api.World, "tool mold drop for " + toolMold.Code);

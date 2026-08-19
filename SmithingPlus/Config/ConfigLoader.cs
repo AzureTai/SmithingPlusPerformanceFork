@@ -9,8 +9,8 @@ public class ConfigLoader : ModSystem
 {
     private const string ServerConfigName = "SmithingPlus.json";
     private const string ClientConfigName = "SmithingPlusClient.json";
-    public static ServerConfig Config { get; private set; }
-    public static ClientConfig CConfig { get; private set; }
+    public static ServerConfig Config { get; private set; } = new ServerConfig();
+    public static ClientConfig CConfig { get; private set; } = new ClientConfig();
 
     public override double ExecuteOrder()
     {
@@ -81,8 +81,8 @@ public class ConfigLoader : ModSystem
 
     public override void Dispose()
     {
-        Config = null;
-        CConfig = null;
+        Config = new ServerConfig();
+        CConfig = new ClientConfig();
         base.Dispose();
     }
 }
