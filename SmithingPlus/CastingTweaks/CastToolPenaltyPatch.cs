@@ -9,6 +9,8 @@ using Vintagestory.GameContent;
 
 namespace SmithingPlus.CastingTweaks;
 
+#nullable enable
+
 [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 [HarmonyPatchCategory(Core.CastingTweaksCategory)]
 public class CastToolPenaltyPatch
@@ -22,6 +24,7 @@ public class CastToolPenaltyPatch
             return;
         foreach (var stack in __result)
         {
+            if (stack?.Collectible == null) continue;
             if (!stack.Collectible.HasBehavior<CollectibleBehaviorCastToolHead>()) continue;
             stack.Attributes ??= new TreeAttribute();
             stack.Attributes.SetBool(ModStackAttributes.CastTool, true);
@@ -36,7 +39,8 @@ public class CastToolPenaltyPatch
         ItemSlot outputSlot,
         IRecipeBase byRecipe)
     {
-        if (outputSlot.Itemstack == null)
+        ItemStack? outputStack = outputSlot?.Itemstack;
+        if (outputStack == null || allInputSlots == null)
             return;
         var castToolsHeads = allInputSlots
             .Where(slot => !slot.Empty)
@@ -47,8 +51,8 @@ public class CastToolPenaltyPatch
             .ToArray();
         var hasCastToolHead = castToolsHeads.Any();
         if (!hasCastToolHead) return;
-        outputSlot.Itemstack.Attributes ??= new TreeAttribute();
-        outputSlot.Itemstack.Attributes.SetBool(ModStackAttributes.CastTool, true);
+        outputStack.Attributes ??= new TreeAttribute();
+        outputStack.Attributes.SetBool(ModStackAttributes.CastTool, true);
     }
 
     [HarmonyPostfix]

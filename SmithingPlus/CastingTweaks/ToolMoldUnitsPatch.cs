@@ -37,22 +37,6 @@ public class ToolMoldUnitsPatch
         ___requiredUnits = requiredUnitsRounded;
     }
 
-    [HarmonyPostfix]
-    [HarmonyPatch(nameof(BlockEntityToolMold.ToTreeAttributes))]
-    public static void ToTreeAttributes_Postfix(BlockEntityToolMold __instance, int ___requiredUnits,
-        ITreeAttribute tree)
-    {
-        tree.SetInt("requiredUnits", ___requiredUnits);
-    }
-
-    [HarmonyPostfix]
-    [HarmonyPatch(nameof(BlockEntityToolMold.FromTreeAttributes))]
-    public static void FromTreeAttributes_Postfix(ITreeAttribute tree, ref int ___requiredUnits,
-        IWorldAccessor worldForResolve)
-    {
-        ___requiredUnits = tree.GetInt("requiredUnits");
-    }
-
     public static int GetPatchedRequiredUnits(ICoreAPI api, Block toolMold, ItemStack fromMetal)
     {
         var dropStacks = GetMoldedStacksStatic(api, toolMold, fromMetal);
@@ -80,11 +64,21 @@ public class ToolMoldUnitsPatch
 
     private static int? VoxelCountForStack(ICoreAPI api, ItemStack stack)
     {
-        var cheapestRecipe = stack.GetCheapestSmithingRecipe(api);
-        if (cheapestRecipe == null) return null;
-        var cheapestOutput = cheapestRecipe.Output.ResolvedItemstack.StackSize;
-        var recipeMaterialVoxels = cheapestRecipe.Voxels.VoxelCount();
-        var voxelsPerItem = Math.Max(recipeMaterialVoxels / cheapestOutput, 0);
+        SmithingRecipe? cheapestRecipe = stack.GetCheapestSmithingRecipe(api);
+        if (cheapestRecipe == null)
+        {
+            return null;
+        }
+
+        JsonItemStack? recipeOutput = cheapestRecipe.Output;
+        ItemStack? resolvedOutputStack = recipeOutput?.ResolvedItemstack;
+        if (resolvedOutputStack == null || resolvedOutputStack.StackSize <= 0)
+        {
+            return null;
+        }
+
+        int recipeMaterialVoxels = cheapestRecipe.Voxels.VoxelCount();
+        int voxelsPerItem = Math.Max(recipeMaterialVoxels / resolvedOutputStack.StackSize, 0);
         return voxelsPerItem * stack.StackSize;
     }
 
@@ -95,14 +89,20 @@ public class ToolMoldUnitsPatch
         {
             if (toolMold.Attributes["drop"].Exists)
             {
-                var jStack =
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
-                    toolMold.Attributes["drop"].AsObject<JsonItemStack>(null, toolMold.Code.Domain);
-#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
-                if (jStack == null)
-                    return [];
-                var itemStack = MoldOutputStackFromCode(jStack, api, toolMold, fromMetal);
-                return itemStack == null ? [] : [itemStack];
+                JsonItemStack jStack = toolMold.Attributes["drop"].AsObject<JsonItemStack>(
+                    new JsonItemStack(), toolMold.Code.Domain);
+                if (jStack?.Code == null)
+                {
+                    return Array.Empty<ItemStack>();
+                }
+
+                ItemStack? itemStack = MoldOutputStackFromCode(jStack, api, toolMold, fromMetal);
+                if (itemStack == null)
+                {
+                    return Array.Empty<ItemStack>();
+                }
+
+                return new ItemStack[] { itemStack };
             }
 
             var jsonItemStackArray =
@@ -129,6 +129,11 @@ public class ToolMoldUnitsPatch
     private static ItemStack? MoldOutputStackFromCode(JsonItemStack jstack, ICoreAPI api, Block toolMold,
         ItemStack fromMetal)
     {
+        if (jstack?.Code == null)
+        {
+            return null;
+        }
+
         var newValue = fromMetal.Collectible.LastCodePart();
         jstack.Code.Path = jstack.Code.Path.Replace("{metal}", newValue);
         jstack.Resolve(api.World, "tool mold drop for " + toolMold.Code);

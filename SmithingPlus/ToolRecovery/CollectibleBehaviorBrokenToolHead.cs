@@ -12,6 +12,8 @@ using Vintagestory.GameContent;
 
 namespace SmithingPlus.ToolRecovery;
 
+#nullable enable
+
 [HarmonyPatch(typeof(ItemWorkItem))]
 [HarmonyPatchCategory(Core.ToolRecoveryCategory)]
 public class CollectibleBehaviorBrokenToolHead(CollectibleObject collObj) : CollectibleBehaviorRepairableTool(collObj)
@@ -33,8 +35,8 @@ public class CollectibleBehaviorBrokenToolHead(CollectibleObject collObj) : Coll
             () =>
             {
                 Core.Logger.VerboseDebug("Storing recipe output name: {0}", recipeId);
-                return Core.Api.GetSmithingRecipes().FirstOrDefault(r => r.RecipeId == recipeId)?.Output
-                    .ResolvedItemstack.GetName();
+                SmithingRecipe? recipe = Core.Api.GetSmithingRecipes().FirstOrDefault(r => r.RecipeId == recipeId);
+                return recipe?.Output?.ResolvedItemstack?.GetName();
             });
         dsc.Clear();
         dsc.AppendLine(toolName == null
@@ -42,13 +44,14 @@ public class CollectibleBehaviorBrokenToolHead(CollectibleObject collObj) : Coll
             : Lang.Get($"{Core.ModId}:Broken {{0}}", toolName.ToLower()));
     }
 
-    public override void GetHeldItemInfo(ItemSlot inSlot, StringBuilder dsc, IWorldAccessor world, bool withDebugInfo)
+    public override void GetHeldItemInfo(ItemSlot? inSlot, StringBuilder dsc, IWorldAccessor world, bool withDebugInfo)
     {
-        if (!IsBrokenToolHead(inSlot.Itemstack)) return;
+        ItemStack? itemStack = inSlot?.Itemstack;
+        if (itemStack == null || !IsBrokenToolHead(itemStack)) return;
         if (world.Api is not ICoreClientAPI) return;
-        var brokenCount = inSlot.Itemstack.GetBrokenCount();
+        int brokenCount = itemStack.GetBrokenCount();
         if (brokenCount <= 0) return;
-        if (Core.Config.ShowBrokenCount) dsc.AppendLine(Lang.Get($"{LangKey} {{0}} times", brokenCount));
+        if (Core.CConfig.ShowBrokenCount) dsc.AppendLine(Lang.Get($"{LangKey} {{0}} times", brokenCount));
         if (Core.Config.DontRepairBrokenToolHeads) dsc.AppendLine(Lang.Get($"{Core.ModId}:itemdesc-needschiseling"));
     }
 
@@ -61,7 +64,8 @@ public class CollectibleBehaviorBrokenToolHead(CollectibleObject collObj) : Coll
         IWorldAccessor world,
         bool withDebugInfo)
     {
-        if (!IsBrokenToolHead(inSlot.Itemstack)) return;
+        ItemStack? itemStack = inSlot?.Itemstack;
+        if (itemStack == null || !IsBrokenToolHead(itemStack)) return;
         // Remove lines containing the respective language entries
         var unknownWorkItem = Lang.Get("Unknown work item");
         var unfinished = $"@(.*){Lang.Get("Unfinished {0}", "(.*)")}(.*)";

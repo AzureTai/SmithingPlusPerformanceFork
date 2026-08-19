@@ -29,11 +29,22 @@ public static class CollectibleExtensions
 
     public static void MakeForgeable(this CollectibleObject collObj)
     {
-        collObj.EnsureAttributesNotNull();
-        var token = collObj.Attributes.Token;
+        JsonObject? attributes = collObj.Attributes;
+        if (attributes == null)
+        {
+            attributes = new JsonObject(new JObject());
+            collObj.Attributes = attributes;
+        }
+
+        JToken? token = attributes.Token;
+        if (token == null)
+        {
+            token = new JObject();
+        }
+
         token["forgable"] = true;
         token["inForgeTransform"] = ForgeTransformToken;
-        collObj.Attributes.Token = token;
+        attributes.Token = token;
     }
 
     public static void AddBehavior<T>(this CollectibleObject collectible) where T : CollectibleBehavior
@@ -73,33 +84,58 @@ public static class CollectibleExtensions
 
     public static SmithingRecipe? GetSmithingRecipe(this CollectibleObject collObj, ICoreAPI api)
     {
-        var smithingRecipe = api.ModLoader
-            .GetModSystem<RecipeRegistrySystem>()
-            .SmithingRecipes
-            .FirstOrDefault(r => r.Output.ResolvedItemstack.Collectible.Code.Equals(collObj.Code));
-        return smithingRecipe;
+        var byOutput = ObjectCacheUtil.GetOrCreate(api, $"{Core.ModId}:smithingRecipesByOutput", () =>
+        {
+            var dict = new Dictionary<AssetLocation, SmithingRecipe>();
+            foreach (var recipe in api.ModLoader.GetModSystem<RecipeRegistrySystem>().SmithingRecipes)
+            {
+                var code = recipe?.Output?.ResolvedItemstack?.Collectible?.Code;
+                if (code != null && recipe != null) dict.TryAdd(code, recipe);
+            }
+
+            return dict;
+        });
+        return byOutput.TryGetValue(collObj.Code, out var smithingRecipe) ? smithingRecipe : null;
     }
 
     public static IEnumerable<SmithingRecipe> GetSmithingRecipesAsIngredient(this CollectibleObject collObj,
         ICoreAPI api)
     {
-        var smithingRecipes =
-            from recipe in api.ModLoader.GetModSystem<RecipeRegistrySystem>().SmithingRecipes
-            from ing in recipe.Ingredients
-            where ing.ResolvedItemStack?.Collectible?.Code?.Equals(collObj.Code) is true
-            select recipe;
-        return smithingRecipes;
+        var byIngredient = ObjectCacheUtil.GetOrCreate(api, $"{Core.ModId}:smithingRecipesByIngredient", () =>
+        {
+            var dict = new Dictionary<AssetLocation, List<SmithingRecipe>>();
+            foreach (var recipe in api.ModLoader.GetModSystem<RecipeRegistrySystem>().SmithingRecipes)
+            foreach (var ing in recipe.Ingredients)
+            {
+                var code = ing?.ResolvedItemStack?.Collectible?.Code;
+                if (code == null) continue;
+                if (!dict.TryGetValue(code, out var list)) dict[code] = list = [];
+                // Prevent duplicate entries when a recipe has the same ingredient multiple times
+                if (list.Count == 0 || list[^1] != recipe) list.Add(recipe);
+            }
+
+            return dict;
+        });
+        return byIngredient.TryGetValue(collObj.Code, out var recipes) ? recipes : [];
     }
 
     public static IEnumerable<GridRecipe> GetGridRecipesAsIngredient(this CollectibleObject collObj, ICoreAPI api)
     {
-        var gridRecipes =
-            from recipe in api.World.GridRecipes
-            from ing in recipe.RecipeIngredients
-            where ing is { ResolvedItemStack.Collectible: not null } &&
-                  ing.ResolvedItemStack?.Collectible?.Code?.Equals(collObj.Code) is true
-            select recipe;
-        return gridRecipes;
+        var byIngredient = ObjectCacheUtil.GetOrCreate(api, $"{Core.ModId}:gridRecipesByIngredient", () =>
+        {
+            var dict = new Dictionary<AssetLocation, List<GridRecipe>>();
+            foreach (var recipe in api.World.GridRecipes)
+            foreach (var ing in recipe.RecipeIngredients)
+            {
+                var code = ing?.ResolvedItemStack?.Collectible?.Code;
+                if (code == null) continue;
+                if (!dict.TryGetValue(code, out var list)) dict[code] = list = [];
+                if (list.Count == 0 || list[^1] != recipe) list.Add(recipe);
+            }
+
+            return dict;
+        });
+        return byIngredient.TryGetValue(collObj.Code, out var recipes) ? recipes : [];
     }
 
     public static CollectibleObject? CollectibleWithVariant(this CollectibleObject collObj, string type, string value)
@@ -136,6 +172,17 @@ public static class CollectibleExtensions
     public static CollectibleBehaviorQuenchable.MetalPropertyVariant? GetMetalProps(
         this CollectibleBehaviorQuenchable behavior)
     {
-        return behavior?.GetField<CollectibleBehaviorQuenchable.MetalPropertyVariant>("metalProps");
+        if (behavior == null)
+        {
+            return null;
+        }
+
+        CollectibleBehaviorQuenchable.MetalPropertyVariant? metalProperties;
+        if (behavior.TryGetField("metalProps", out metalProperties))
+        {
+            return metalProperties;
+        }
+
+        return null;
     }
 }

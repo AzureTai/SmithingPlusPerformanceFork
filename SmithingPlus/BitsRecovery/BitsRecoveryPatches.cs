@@ -67,9 +67,14 @@ public class BitsRecoveryPatches
             return;
         }
 
-        var metalBitStack = metalMaterial.MetalBitStack;
+        ItemStack? metalBitStack = metalMaterial.MetalBitStack;
+        if (metalBitStack == null)
+        {
+            Core.Logger.VerboseDebug("[BitsRecovery] The resolved metal material has no metal bit item.");
+            return;
+        }
         var temperature = workItemStack.Collectible.GetTemperature(byPlayer.Entity.World, workItemStack);
-        metalBitStack?.Collectible.SetTemperature(byPlayer.Entity.World, metalBitStack, temperature);
+        metalBitStack.Collectible.SetTemperature(byPlayer.Entity.World, metalBitStack, temperature);
         if (byPlayer.InventoryManager.TryGiveItemstack(metalBitStack)) return;
         byPlayer.Entity.World.SpawnItemEntity(metalBitStack, byPlayer.Entity.Pos.XYZ);
     }

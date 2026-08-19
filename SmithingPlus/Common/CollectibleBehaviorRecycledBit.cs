@@ -18,14 +18,14 @@ public class CollectibleBehaviorRecycledBit(CollectibleObject collObj) : Collect
         ref EnumHandling bhHandling)
     {
         base.OnCreatedByCrafting(allInputSlots, outputSlot, byRecipe, ref bhHandling);
-        if (outputSlot?.Itemstack == null ||
-            allInputSlots == null)
+        ItemStack outputStack = outputSlot?.Itemstack;
+        if (outputStack == null || allInputSlots == null || byRecipe?.RecipeIngredients == null)
             return;
 
         // Identify recipe tools from ingredients
         var toolIngredients = byRecipe.RecipeIngredients
             .Where(ing =>
-                ing.ConsumeProperties is { Consume: false, DurabilityCost: > 0 } ||
+                ing?.ConsumeProperties is { Consume: false, DurabilityCost: > 0 } ||
                 ing?.RecipeAttributes?[ModRecipeAttributes.RecyclingRecipe]?.AsBool() == true)
             .ToArray() ?? [];
 
@@ -49,7 +49,8 @@ public class CollectibleBehaviorRecycledBit(CollectibleObject collObj) : Collect
                 0; // Use this NOT stack.StackSize because that could have more items than the recipe requires
             foreach (var ingredient in byRecipe.RecipeIngredients)
             {
-                if (!ingredient.SatisfiesAsIngredient(stack) || ingredient.ResolvedItemStack == null)
+                if (ingredient == null || !ingredient.SatisfiesAsIngredient(stack) ||
+                    ingredient.ResolvedItemStack == null)
                     continue;
                 consumedStackSize = ingredient.ResolvedItemStack.StackSize;
                 break;
@@ -88,8 +89,8 @@ public class CollectibleBehaviorRecycledBit(CollectibleObject collObj) : Collect
 
         // Scale output stack size by VoxelsPerBit
         var bits = Math.Max((int)(totalVoxels / Core.Config.VoxelsPerBit), 1);
-        outputSlot.Itemstack.StackSize = bits;
-        outputSlot.Itemstack.Collectible.SetTemperature(Api.World, outputSlot.Itemstack, temperature);
+        outputStack.StackSize = bits;
+        outputStack.Collectible.SetTemperature(Api.World, outputStack, temperature);
     }
 
     private static bool IsToolStack(ItemStack stack, IRecipeIngredient[] toolIngredients)

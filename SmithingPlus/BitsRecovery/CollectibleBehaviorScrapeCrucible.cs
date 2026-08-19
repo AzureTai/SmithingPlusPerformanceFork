@@ -83,8 +83,11 @@ public class CollectibleBehaviorScrapeCrucible(CollectibleObject collObj) : Coll
             var firedCrucibleCode = crucibleStack.Collectible.CodeWithVariant("type", "fired");
             var firedCrucibleItem = world.GetBlock(firedCrucibleCode);
             if (firedCrucibleItem == null)
+            {
                 Core.Logger.Warning(
                     $"[{nameof(OnHeldInteractStop)}] Something went wrong, cannot find fired crucible with code {firedCrucibleCode}");
+                return;
+            }
             var emptyCrucibleStack = new ItemStack(firedCrucibleItem);
             if (!playerInventory.TryGiveItemstack(metalBitStack, true))
                 world.SpawnItemEntity(metalBitStack, blockSel.Position);

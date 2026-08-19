@@ -150,27 +150,70 @@ public static class ItemStackExtensions
     // Gets the smithing recipe with the largest output stack that satisfies the tool head
     public static SmithingRecipe? GetLargestSmithingRecipe(this ItemStack toolHead, ICoreAPI api)
     {
-        var smithingRecipe = api.ModLoader
-                .GetModSystem<RecipeRegistrySystem>()?
-                .SmithingRecipes?
-                .Where(r => r?.Output?.ResolvedItemstack?.Satisfies(toolHead) == true)
-                .OrderByDescending(r => r.Output.ResolvedItemstack.StackSize)
-                .FirstOrDefault()
-            ;
-        return smithingRecipe;
+        RecipeRegistrySystem? recipeRegistry = api.ModLoader.GetModSystem<RecipeRegistrySystem>();
+        if (recipeRegistry?.SmithingRecipes == null)
+        {
+            return null;
+        }
+
+        SmithingRecipe? largestRecipe = null;
+        int largestOutputStackSize = 0;
+        foreach (SmithingRecipe? recipe in recipeRegistry.SmithingRecipes)
+        {
+            ItemStack? resolvedOutputStack = recipe?.Output?.ResolvedItemstack;
+            if (resolvedOutputStack == null || !resolvedOutputStack.Satisfies(toolHead))
+            {
+                continue;
+            }
+
+            if (resolvedOutputStack.StackSize > largestOutputStackSize)
+            {
+                largestRecipe = recipe;
+                largestOutputStackSize = resolvedOutputStack.StackSize;
+            }
+        }
+
+        return largestRecipe;
     }
 
     // Gets the smithing recipe with the least expensive output that satisfies the tool head
     public static SmithingRecipe? GetCheapestSmithingRecipe(this ItemStack toolHead, ICoreAPI api)
     {
-        var smithingRecipe = api.ModLoader
-                .GetModSystem<RecipeRegistrySystem>()?
-                .SmithingRecipes?
-                .Where(r => r?.Output?.ResolvedItemstack?.Satisfies(toolHead) == true)
-                .OrderByDescending(r => r.Voxels.VoxelCount() / r.Output.ResolvedItemstack.StackSize)
-                .FirstOrDefault()
-            ;
-        return smithingRecipe;
+        RecipeRegistrySystem? recipeRegistry = api.ModLoader.GetModSystem<RecipeRegistrySystem>();
+        if (recipeRegistry?.SmithingRecipes == null)
+        {
+            return null;
+        }
+
+        SmithingRecipe? selectedRecipe = null;
+        int selectedVoxelCost = int.MinValue;
+        foreach (SmithingRecipe? recipe in recipeRegistry.SmithingRecipes)
+        {
+            if (recipe == null)
+            {
+                continue;
+            }
+
+            ItemStack? resolvedOutputStack = recipe.Output?.ResolvedItemstack;
+            if (resolvedOutputStack == null || resolvedOutputStack.StackSize <= 0)
+            {
+                continue;
+            }
+
+            if (!resolvedOutputStack.Satisfies(toolHead))
+            {
+                continue;
+            }
+
+            int voxelCost = recipe.Voxels.VoxelCount() / resolvedOutputStack.StackSize;
+            if (voxelCost > selectedVoxelCost)
+            {
+                selectedRecipe = recipe;
+                selectedVoxelCost = voxelCost;
+            }
+        }
+
+        return selectedRecipe;
     }
 
     public static IEnumerable<GridRecipe> GetGridRecipes(this ItemStack itemStack, ICoreAPI api)

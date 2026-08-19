@@ -15,8 +15,13 @@ public static class MetalMaterialExtensions
 
     public static MetalMaterial? GetOrCacheMetalMaterial(this CollectibleObject collObj, ICoreAPI api)
     {
-        var metalMaterial =
-            CacheHelper.GetOrAdd(Core.MetalMaterialCache, collObj.Code, () => collObj.GetMetalMaterial(api));
+        var cache = Core.MetalMaterialCache;
+        if (cache.TryGetValue(collObj.Code, out var cached)) return cached;
+        var metalMaterial = collObj.GetMetalMaterial(api);
+        // Negative results are only meaningful once the loader has resolved its materials;
+        // before that point every lookup returns null and must not poison the cache.
+        if (metalMaterial != null || api.GetModSystem<MetalMaterialLoader>()?.MaterialsResolved == true)
+            cache[collObj.Code] = metalMaterial;
         return metalMaterial;
     }
 
@@ -75,17 +80,34 @@ public static class MetalMaterialExtensions
         Func<CollectibleObject, MetalMaterial?> materialResolver, out MetalMaterial? metalMaterial)
     {
         metalMaterial = null;
-        foreach (var gridRecipe in gridRecipes)
+        foreach (GridRecipe gridRecipe in gridRecipes)
         {
-            var ingredients =
-                from ing in gridRecipe.RecipeIngredients
-                where ing is { ResolvedItemStack: not null, ConsumeProperties.Consume: false } || ing.ConsumeProperties.DurabilityCost == 0 &&
-                      ing.ResolvedItemStack?.Collectible != null
-                select ing.ResolvedItemStack?.Collectible;
-            foreach (var ingredient in ingredients)
+            if (gridRecipe == null || gridRecipe.RecipeIngredients == null)
             {
-                if (ingredient == null) continue;
-                metalMaterial = materialResolver(ingredient);
+                continue;
+            }
+
+            foreach (CraftingRecipeIngredient ingredientDefinition in gridRecipe.RecipeIngredients)
+            {
+                if (ingredientDefinition == null)
+                {
+                    continue;
+                }
+
+                ItemStack? resolvedIngredientStack = ingredientDefinition.ResolvedItemStack;
+                CollectibleObject? ingredientCollectible = resolvedIngredientStack?.Collectible;
+                if (ingredientCollectible == null)
+                {
+                    continue;
+                }
+
+                if (ingredientDefinition.ConsumeProperties.Consume &&
+                    ingredientDefinition.ConsumeProperties.DurabilityCost != 0)
+                {
+                    continue;
+                }
+
+                metalMaterial = materialResolver(ingredientCollectible);
                 if (metalMaterial != null) return true;
             }
         }
@@ -115,7 +137,7 @@ public static class MetalMaterialExtensions
         MetalMaterial? metalMaterial = null;
         foreach (var recipe in smithingRecipes)
         {
-            var ingredient = recipe.Output.ResolvedItemstack?.Collectible;
+            var ingredient = recipe?.Output?.ResolvedItemstack?.Collectible;
             if (ingredient == null) continue;
             var variantCode = ingredient.GetMetalVariant();
             metalMaterial = MetalMaterialLoader.GetMaterial(api, variantCode);
@@ -144,10 +166,14 @@ public static class MetalMaterialExtensions
     public static MetalMaterial? GetOrCacheMetalMaterial(this ItemStack itemStack, ICoreAPI api)
     {
         var collObj = itemStack.Collectible;
-        if (collObj is not IAnvilWorkable anvilWorkable) return collObj?.GetMetalMaterial(api);
-        var ingotStack = anvilWorkable.GetBaseMaterial(itemStack);
+        if (collObj is not IAnvilWorkable anvilWorkable) return collObj?.GetOrCacheMetalMaterial(api);
+        ItemStack? ingotStack = anvilWorkable.GetBaseMaterial(itemStack);
+        if (ingotStack?.Collectible == null)
+        {
+            return collObj.GetOrCacheMetalMaterial(api);
+        }
         var metalMaterial = ingotStack.Collectible.GetOrCacheMetalMaterial(api);
-        return metalMaterial ?? collObj.GetMetalMaterial(api);
+        return metalMaterial ?? collObj.GetOrCacheMetalMaterial(api);
     }
 
     // Use when what matters is the processed result (e.g., iron bloom > iron, blister steel > steel)
@@ -157,7 +183,11 @@ public static class MetalMaterialExtensions
         // Resort to the CollectibleObject method for items that are not anvil workable
         if (collObj is not IAnvilWorkable anvilWorkable) return collObj?.GetOrCacheMetalMaterial(api);
         // Grab from IAnvilWorkable
-        var ingotStack = anvilWorkable.GetBaseMaterial(itemStack);
+        ItemStack? ingotStack = anvilWorkable.GetBaseMaterial(itemStack);
+        if (ingotStack?.Collectible == null)
+        {
+            return collObj.GetMetalMaterialProcessed(api) ?? collObj.GetOrCacheMetalMaterial(api);
+        }
         // Try to grab the processed material from the ingot stack
         return ingotStack.Collectible.GetMetalMaterialProcessed(api);
     }

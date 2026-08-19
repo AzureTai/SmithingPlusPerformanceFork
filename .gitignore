@@ -1,13 +1,29 @@
-bin/
-obj/
-/test
-/packages/
-riderModule.iml
-/_ReSharper.Caches/
-*.idea
-*.DS_Store
-/.idea/**/*
-/Releases/**/*
+# .NET build output
+[Bb]in/
+[Oo]bj/
+artifacts/
+
+# Generated release packages
+/Releases/
+
+# Visual Studio
+/.vs/
+*.suo
+*.user
+*.rsuser
 *.sln.DotSettings.user
-/.vs/SmithingPlus
-/.vs/ProjectEvaluation
+*.binlog
+
+# JetBrains Rider and ReSharper
+/.idea/
+*.sln.iml
+riderModule.iml
+_ReSharper.Caches/
+
+# Restored packages
+/packages/
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini

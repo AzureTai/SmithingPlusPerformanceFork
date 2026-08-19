@@ -7,8 +7,10 @@ namespace SmithingPlus.Config;
 [UsedImplicitly]
 public class ConfigLoader : ModSystem
 {
-    private const string ConfigName = "SmithingPlus.json";
-    public static ServerConfig Config { get; private set; }
+    private const string ServerConfigName = "SmithingPlus.json";
+    private const string ClientConfigName = "SmithingPlusClient.json";
+    public static ServerConfig Config { get; private set; } = new ServerConfig();
+    public static ClientConfig CConfig { get; private set; } = new ClientConfig();
 
     public override double ExecuteOrder()
     {
@@ -19,14 +21,39 @@ public class ConfigLoader : ModSystem
     {
         try
         {
-            Config = api.LoadModConfig<ServerConfig>(ConfigName);
+            CConfig = api.LoadModConfig<ClientConfig>(ClientConfigName);
+            if (CConfig == null)
+            {
+                // Try to load settings from old mixed file
+                CConfig = api.LoadModConfig<ClientConfig>(ServerConfigName);
+                if (CConfig == null)
+                {
+                    CConfig = new ClientConfig();
+                    Mod.Logger.VerboseDebug("Client Config file not found, creating a new one...");
+                } else
+                {
+                    Mod.Logger.VerboseDebug("Client Config file not found, creating from old combined config");
+                }
+            }
+
+            api.StoreModConfig(CConfig, ClientConfigName);
+        }
+        catch (Exception e)
+        {
+            Mod.Logger.Error("Failed to load client config, you probably made a typo: {0}", e);
+            CConfig = new ClientConfig();
+        }
+
+        try
+        {
+            Config = api.LoadModConfig<ServerConfig>(ServerConfigName);
             if (Config == null)
             {
                 Config = new ServerConfig();
                 Mod.Logger.VerboseDebug("Config file not found, creating a new one...");
             }
 
-            api.StoreModConfig(Config, ConfigName);
+            api.StoreModConfig(Config, ServerConfigName);
         }
         catch (Exception e)
         {
@@ -54,7 +81,8 @@ public class ConfigLoader : ModSystem
 
     public override void Dispose()
     {
-        Config = null;
+        Config = new ServerConfig();
+        CConfig = new ClientConfig();
         base.Dispose();
     }
 }
