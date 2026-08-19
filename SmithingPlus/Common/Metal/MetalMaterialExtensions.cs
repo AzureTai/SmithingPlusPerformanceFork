@@ -89,20 +89,25 @@ public static class MetalMaterialExtensions
 
             foreach (CraftingRecipeIngredient ingredientDefinition in gridRecipe.RecipeIngredients)
             {
-                if (ingredientDefinition == null || ingredientDefinition.ResolvedItemStack?.Collectible == null)
+                if (ingredientDefinition == null)
                 {
                     continue;
                 }
 
-                if (ingredientDefinition.ConsumeProperties == null ||
-                    (ingredientDefinition.ConsumeProperties.Consume &&
-                     ingredientDefinition.ConsumeProperties.DurabilityCost != 0))
+                ItemStack? resolvedIngredientStack = ingredientDefinition.ResolvedItemStack;
+                CollectibleObject? ingredientCollectible = resolvedIngredientStack?.Collectible;
+                if (ingredientCollectible == null)
                 {
                     continue;
                 }
 
-                CollectibleObject ingredient = ingredientDefinition.ResolvedItemStack.Collectible;
-                metalMaterial = materialResolver(ingredient);
+                if (ingredientDefinition.ConsumeProperties.Consume &&
+                    ingredientDefinition.ConsumeProperties.DurabilityCost != 0)
+                {
+                    continue;
+                }
+
+                metalMaterial = materialResolver(ingredientCollectible);
                 if (metalMaterial != null) return true;
             }
         }

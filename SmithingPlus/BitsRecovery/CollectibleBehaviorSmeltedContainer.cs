@@ -9,7 +9,7 @@ namespace SmithingPlus.BitsRecovery;
 
 public class CollectibleBehaviorSmeltedContainer(CollectibleObject collObj) : CollectibleBehavior(collObj)
 {
-    public override void GetHeldItemInfo(ItemSlot inSlot, StringBuilder dsc, IWorldAccessor world, bool withDebugInfo)
+    public override void GetHeldItemInfo(ItemSlot? inSlot, StringBuilder dsc, IWorldAccessor world, bool withDebugInfo)
     {
         base.GetHeldItemInfo(inSlot, dsc, world, withDebugInfo);
         ItemStack? itemStack = inSlot?.Itemstack;
