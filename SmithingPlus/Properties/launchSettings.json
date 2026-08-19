@@ -2,40 +2,15 @@
   "profiles": {
     "Client": {
       "commandName": "Executable",
-      "executablePath": "$(VINTAGE_STORY)/Vintagestory",
-      "commandLineArgs": "--tracelog --playStyle \"preset-surviveandbuild\" --addModPath \"$(ProjectDir)/bin/$(Configuration)/Mods\" \"$(DevModPath)\" \"$(TestDataPath)/Mods\" --openWorld \"$(WorldName)\" --dataPath \"$(TestDataPath)\"",
+      "executablePath": "dotnet",
+      "commandLineArgs": "\"$(VINTAGE_STORY)/Vintagestory.dll\" --tracelog --addModPath \"$(ProjectDir)/bin/$(Configuration)/Mods\" --addOrigin \"$(ProjectDir)/assets\"",
       "workingDirectory": "$(VINTAGE_STORY)"
     },
     "Server": {
       "commandName": "Executable",
-      "executablePath": "$(VINTAGE_STORY)/VintagestoryServer",
-      "commandLineArgs": "--tracelog --addModPath \"$(ProjectDir)/bin/$(Configuration)/Mods\" \"$(DevModPath)\" --dataPath \"$(TestDataPath)\"",
+      "executablePath": "dotnet",
+      "commandLineArgs": "\"$(VINTAGE_STORY)/VintagestoryServer.dll\" --tracelog --addModPath \"$(ProjectDir)/bin/$(Configuration)/Mods\" --addOrigin \"$(ProjectDir)/assets\"",
       "workingDirectory": "$(VINTAGE_STORY)"
-    },
-    "ClientFlat": {
-      "commandName": "Executable",
-      "executablePath": "$(VINTAGE_STORY)/Vintagestory",
-      "commandLineArgs": "--tracelog --addModPath \"$(ProjectDir)/bin/$(Configuration)/Mods\" \"$(DevModPath)\" -o \"$(WorldName) Flat\" --dataPath \"$(TestDataPath)\"",
-      "workingDirectory": "$(VINTAGE_STORY)"
-    },
-    "ServerFlat": {
-      "commandName": "Executable",
-      "executablePath": "$(VINTAGE_STORY)/VintagestoryServer",
-      "commandLineArgs": "--tracelog --addModPath \"$(ProjectDir)/bin/$(Configuration)/Mods\" \"$(DevModPath)\" -o \"$(WorldName) Flat\" --dataPath \"$(TestDataPath)\"",
-      "workingDirectory": "$(VINTAGE_STORY)"
-    },
-    "ClientDotnet": {
-      "commandName": "Executable",
-      "executablePath": "/usr/local/share/dotnet/x64/dotnet",
-      "commandLineArgs": "\"$(VINTAGE_STORY)/Vintagestory.dll\" --tracelog --addModPath \"$(ProjectDir)/bin/$(Configuration)/Mods\" \"$(DevModPath)\" --dataPath \"$(TestDataPath)\"",
-      "workingDirectory": "$(VINTAGE_STORY)",
-      "environmentVariables": {
-        "DOTNET_gcServer": "1",
-        "DOTNET_GCNoAffinitize": "1",
-        "DOTNET_TieredPGO": "1",
-        "DYLD_LIBRARY_PATH": "$(VINTAGE_STORY)/Lib",
-        "DOTNET_HOTRELOAD_ENABLED": "1"
-      }
     }
   }
 }

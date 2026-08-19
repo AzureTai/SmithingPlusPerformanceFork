@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="SmithingPlus/SmithingPlus.csproj" />
+  <Project Path="ZZCakeBuild/CakeBuild.csproj" />
+</Solution>
